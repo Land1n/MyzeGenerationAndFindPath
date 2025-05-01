@@ -76,7 +76,6 @@ void addBadPoint(point &p,std::vector<point>& path,std::vector<point>& bad_path,
 
 std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &start = START_POSITION, point &end = END_POSITION,bool view_try_counter = false)
 {
-	//std::vector<point> bad_path;
 	std::vector<point> path;
 	point position_now = start;
 	unsigned long try_counter = 0;
@@ -93,7 +92,7 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
                 	for (int i = 0; i!=4;i++){
                     		Move m = static_cast<Move>(i);
 				if(start == bpos){
-					
+					bad_path_mutex.unlock();
 					path.clear();
 					printField(path,bad_path);
 					return path;
@@ -101,18 +100,16 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
 				if (position_now.checkDoMove(m) == bpos || checkPointInArr(position_now.checkDoMove(m),path))
                         		bad_move.push_back(i);
 		}
-		bad_path_mutex.unlock();
 		short seed = getRandomInt(0,3,bad_move); 
 		if (seed == -1)
 		{
-			bad_path_mutex.lock();
 			addBadPoint(position_now,path,bad_path,start);
-			bad_path_mutex.unlock();
 			position_now = start;
                         path.clear();
 		}
         	else if (seed != -1) {
-            		path.push_back(position_now);
+			try_counter+=1;		
+			path.push_back(position_now);
             		Move m = static_cast<Move>(seed);
             		position_now.doMove(m);
         	}
@@ -120,10 +117,11 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
         	    //std::system("cls");
         	    printField(path,bad_path);
         	}
+		bad_path_mutex.unlock();
 	}
     	if (path.size() > 0)
        		path.push_back(position_now);
-
+	bad_path_mutex.unlock();
     	return path;
 }
 std::vector<point> minRandomMemoryPath(int niterations = 1000000,point &start = START_POSITION,point &end = END_POSITION){
