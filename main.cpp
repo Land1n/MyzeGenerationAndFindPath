@@ -1,17 +1,21 @@
 #include <iostream>
 #include <chrono>
-#include <ctime>
-#include <fstream>
 #include "generationField.h"
 #include "findPath.h"
-//#include "constant.h"
+
 
 int main(){ 
     GenerationField();
-    while (findPath(1,END_POSITION,START_POSITION).size() == 0) {
-    	clearField();
+    int counter_bad_maze = 0;
+    std::cout << "start generation maze"<< std::endl;
+    while (findRandomMemoryPath(END_POSITION,START_POSITION,true).size() == 0) {
+    	counter_bad_maze+=1;
+        std::cout << "bad generation maze: " << counter_bad_maze << std::endl;
+	clearField();
 	GenerationField();
-    }
+	std::cout << "new generation maze:" << std::endl;
+	printField();
+	}
     std::cout << "create Maze";
     std::vector path = findPath();
     printField(path);
