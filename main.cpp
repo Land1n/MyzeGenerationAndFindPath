@@ -8,7 +8,7 @@ int main(){
     GenerationField();
     int counter_bad_maze = 0;
     std::cout << "start generation maze"<< std::endl;
-    while (findRandomMemoryPath(END_POSITION,START_POSITION,true).size() == 0) {
+    while (findPathMultithreading(END_POSITION,START_POSITION).size() == 0) {
     	counter_bad_maze+=1;
         std::cout << "bad generation maze: " << counter_bad_maze << std::endl;
 	clearField();
