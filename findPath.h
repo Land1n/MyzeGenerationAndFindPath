@@ -70,29 +70,37 @@ void addBadPoint(point &p,std::vector<point>& path,std::vector<point>& bad_path,
                                 if(p.checkDoMove(m) == bpos)bad_way += 1;
 			}
 		if (bad_way == 3)
+		{
 			bad_path.push_back(p);
-	} else if(p ==start && isBadCrossroad(p,bad_path,0)) bad_path.push_back(p);
+		}
+	} else if(p ==start && isBadCrossroad(p,bad_path,0)){
+		bad_path.push_back(p);
+	}
 }
-
-std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &start = START_POSITION, point &end = END_POSITION,bool view_try_counter = false)
+ 
+std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,bool &finding,point &start = START_POSITION, point &end = END_POSITION,bool view_try_counter = false)
 {
 	std::vector<point> path;
 	point position_now = start;
-	unsigned long try_counter = 0;
 	while (position_now != end)
 	{
-		try_counter+=1;
-		if (view_try_counter  && try_counter%100000 == 0){
-			std::cout << "try number: " << try_counter << std::endl;
-			printField(path,bad_path);
+		if (finding == false){
+			path.clear();
+			return path;
 		}
+                if (view_try_counter  && bad_path.size()%50 == 0){
+                        std::cout << "bad path size: " << bad_path.size() << std::endl;
+                        printField(path,bad_path);
+                }
+
 		std::vector<int> bad_move = checkOnWallNextStep(position_now);
-		bad_path_mutex.lock();
+//		bad_path_mutex.lock();
 		for(point bpos: bad_path)
                 	for (int i = 0; i!=4;i++){
                     		Move m = static_cast<Move>(i);
 				if(start == bpos){
-					bad_path_mutex.unlock();
+					finding = false;
+//					bad_path_mutex.unlock();
 					path.clear();
 					printField(path,bad_path);
 					return path;
@@ -100,6 +108,8 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
 				if (position_now.checkDoMove(m) == bpos || checkPointInArr(position_now.checkDoMove(m),path))
                         		bad_move.push_back(i);
 		}
+//		bad_path_mutex.unlock();
+
 		short seed = getRandomInt(0,3,bad_move); 
 		if (seed == -1)
 		{
@@ -108,7 +118,6 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
                         path.clear();
 		}
         	else if (seed != -1) {
-			try_counter+=1;		
 			path.push_back(position_now);
             		Move m = static_cast<Move>(seed);
             		position_now.doMove(m);
@@ -117,50 +126,36 @@ std::vector<point> findRandomMemoryPath(std::vector<point>& bad_path,point &star
         	    //std::system("cls");
         	    printField(path,bad_path);
         	}
-		bad_path_mutex.unlock();
+//		bad_path_mutex.unlock();
 	}
     	if (path.size() > 0)
        		path.push_back(position_now);
-	bad_path_mutex.unlock();
+//	bad_path_mutex.unlock();
     	return path;
-}
-std::vector<point> minRandomMemoryPath(int niterations = 1000000,point &start = START_POSITION,point &end = END_POSITION){
-	std::vector<point> bad_path;
-    	std::vector<point> min_path = findRandomMemoryPath(bad_path,start,end);
-
-        for(int i = 0; i != niterations; i++){
-                std::vector<point> random_path = findRandomMemoryPath(bad_path,start,end);
-                if (min_path.size() > random_path.size() && random_path.size() != 0 )min_path = random_path;
-        }
-
-    return min_path;
-}
-std::vector<point> findPath(int niterations = 10000, point &start = START_POSITION, point &end = END_POSITION){
-
-    std::vector<point> min_path = minRandomMemoryPath(1,start,end);
-    std::vector<point> clean_path = cleanPath(min_path);
-    
-    return clean_path;
 }
 
  
 
-std::vector<point> findPathMultithreading(point &start = START_POSITION, point &end = END_POSITION){
-        std::vector<point> bad_path;
+std::vector<point> findPathMultithreading(std::vector<point> &bad_path,bool&finding,point &start = START_POSITION, point &end = END_POSITION){
 	std::vector<point> path;
-	auto f1 = [&path,&bad_path,&start,&end]() {
+	auto f1 = [&path,&bad_path,&start,&end,&finding]() {
 //    		path_mutex.lock();
-		path = findRandomMemoryPath(bad_path,start,end,true); 
+		path = findRandomMemoryPath(bad_path,finding,start,end,true); 
 //		path_mutex.unlock();
 	};
-   	auto f2 = [&path,&bad_path,&start,&end]() {
+  // 	auto f2 = [&path,&bad_path,&start,&end,&finding]() {
 //		path_mutex.lock();
-                findRandomMemoryPath(bad_path,start,end);
+    //            findRandomMemoryPath(bad_path,finding,start,end);
 //		path_mutex.unlock();
+       // };
+        auto f3 = [&path,&bad_path,&start,&end,&finding]() {
+//              path_mutex.lock();
+		path = findRandomMemoryPath(bad_path,finding,end,start);
+//              path_mutex.unlock();
         };
-
 	std::thread t1(f1);
-	std::thread t2(f2);
+//	std::thread t2(f2);
+	std::thread t2(f3);
     	t1.join();
     	t2.join();
 	return path;

@@ -4,7 +4,7 @@
 
 const bool DEBUG = false;
 
-const int FIELD_SIZE = 31;
+const int FIELD_SIZE = 61;
 
 int FIELD[FIELD_SIZE][FIELD_SIZE];
 
